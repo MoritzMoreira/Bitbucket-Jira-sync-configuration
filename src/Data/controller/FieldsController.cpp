@@ -1,7 +1,9 @@
 #include <qmessagebox.h>
+#include <qdebug.h>
 
 #include "../../Widgets/DetailsContainer.h"
 #include "../FieldsController.h"
+#include "../ConnectionController.h"
 #include "../MainController.h"
 
 FieldsController::FieldsController( const QModelIndex& index, QWidget* parent ) :
@@ -40,13 +42,10 @@ void FieldsController::SetSaveOption( const bool& value )
     m_saveOption = value;
 }
 
-void FieldsController::SetFieldItem( const unsigned int& trackerConnID, const unsigned int& fieldMappingID )
+void FieldsController::SetFieldItem( const int& trackerConnID, const int& fieldMappingID )
 {
     if ( m_index == QModelIndex() )
-    {
-        std::cout << "\n m_index war QModelIndex\n ";
         m_index = SetIndexFromID( trackerConnID, fieldMappingID );
-    }
     TreeItem* treeItem = m_pModel->GetItem( m_index, 0 );
     m_pFieldItem = static_cast<FieldItem*>( treeItem );
 }
@@ -73,6 +72,7 @@ const std::vector<int> FieldsController::SaveChanges( Field& newFromField, Field
         m_pMatchedMapping = std::find_if( MainController::GetTables().fieldMaps.begin(), MainController::GetTables().fieldMaps.end(), IDisEqual );
 
         std::vector<TrackerConnFieldMap>::iterator searchRangeBeginning = MainController::GetTables().trackerConnFieldMaps.begin();
+        m_connsWithMapping.clear();
         while ( true )
         {
             auto MappingIDisEqual = [ & ]( TrackerConnFieldMap& trackerConnFieldMapping )
@@ -118,18 +118,10 @@ void FieldsController::SaveChangesToAll()
     {
         if ( trackerConnFieldMap != m_connsWithMapping.front() )
         {
-            std::cout << "\n trackerCOnnFieldMap : " << trackerConnFieldMap->trackerConnID << "  "
-                      << trackerConnFieldMap->fieldMapID << "\n";
             QModelIndex idx = SetIndexFromID( trackerConnFieldMap->trackerConnID, trackerConnFieldMap->fieldMapID );
-            if ( idx.isValid() )
-                std::cout << "\n index row: " << idx.row() << "\n";
-            else
-                std::cout << "\n index not valid " << "\n";
 
             TreeItem* treeItem = m_pModel->GetItem( idx, 0 );
             FieldItem* fieldItem = static_cast<FieldItem*>( treeItem );
-            std::cout << "\n fieldItem from path: " << fieldItem->GetFieldFrom().path
-                      << "fieldItem to path : " << fieldItem->GetFieldTo().path << "\n";
 
             CopyFieldProperties( m_pFieldItem, fieldItem );
 
@@ -143,7 +135,10 @@ void FieldsController::SaveChangesToAll()
 void FieldsController::SaveOnlyToCurrentConn()
 {
     MainController::GetTables().trackerConnFieldMaps.erase( m_connsWithMapping.front() );
-    SaveAsNewMapping( m_pFieldItem->GetFieldFrom(), m_pFieldItem->GetFieldTo(), m_pFieldItem->GetFieldMap()->id );
+    SaveAsNewMapping( m_pFieldItem->GetFieldFrom(),
+                      m_pFieldItem->GetFieldTo(),
+                      static_cast<ConnectionItem*>( m_pFieldItem->parentItem() )->GetTrackerConn().id,
+                      m_pFieldItem->GetFieldMap()->id );
     m_pFieldItem->SetFieldsLabel();
     emit RequestUpdateView();
 }
@@ -158,54 +153,61 @@ void FieldsController::CopyFieldProperties( FieldItem* inFieldItem, FieldItem* o
 
 void FieldsController::SaveAsNewMapping( Field& newFromField, Field& newToField,  int trackerConnID, const int& fieldMappingID )
 {
-    SetFieldItem( trackerConnID, fieldMappingID );
+    int numberOfRows = 0;
+    bool resultFromInsertRows;
+    TreeItem* insertedTreeItem;
+    FieldMap newFieldMap;
+    newFieldMap.id = CreateUniqueID();
+    newFieldMap.fieldIDfrom = newFromField.id;
+    newFieldMap.fieldIDto = newToField.id;
+
+    if ( fieldMappingID == -1 )
+    {
+        ConnectionController connectionController;
+        m_index = connectionController.SetIndexFromID( trackerConnID );
+
+        m_pModel->insertRows( numberOfRows, 1, m_index );
+        insertedTreeItem = m_pModel->GetItem( m_index, 0 )->child( 0 );
+    }
+    else
+    {
+        numberOfRows = m_pModel->rowCount( m_index.parent() );
+        m_pModel->insertRows( numberOfRows, 1, m_index.parent() );
+        insertedTreeItem = m_pModel->GetItem( m_index.siblingAtRow( numberOfRows ), 0 );
+    }
+
     CheckIfFieldExists( newFromField );
     CheckIfFieldExists( newToField );
     int idOfExistingItem = CheckIfMappingExistsAsSibling( newFromField, newToField );
-    if ( idOfExistingItem == -1 || !m_pModel->hasChildren() )
+  
+    if ( idOfExistingItem == -1 )
     {
         std::vector<FieldMap>::iterator matchedFieldMapping = CheckIfMappingExists( newFromField, newToField );
-        unsigned int matchedFieldMappingID = matchedFieldMapping->id;
-        if ( matchedFieldMapping == MainController::GetTables().fieldMaps.end() )
+        unsigned int matchedFieldMappingID;
+        if ( matchedFieldMapping != MainController::GetTables().fieldMaps.end() )  // Field mapping exists in other connection?
+            matchedFieldMappingID = matchedFieldMapping->id;
+        else  
         {
-            MainController::GetTables().fieldMaps.push_back( *m_pFieldItem->GetFieldMap() );
+            MainController::GetTables().fieldMaps.push_back( newFieldMap );
             matchedFieldMappingID = CreateUniqueID();
         }
-        const int numberOfRows = m_pModel->rowCount( m_index.parent() );
-        FieldMap newFieldMap = FieldMap( { "0", "0", "0" } );
-        newFieldMap.id = CreateUniqueID();
-        newFieldMap.fieldIDfrom = newFromField.id;
-        newFieldMap.fieldIDto = newToField.id;
-
-        m_pModel->insertRows( numberOfRows, 1, m_index.parent() );
-        TreeItem* insertedTreeItem = m_pModel->GetItem( m_index.siblingAtRow( numberOfRows ), 0 );
+        
         FieldItem* insertedFieldItem = static_cast<FieldItem*>( insertedTreeItem );
         *insertedFieldItem->GetFieldMap() = newFieldMap;
+        insertedFieldItem->GetFieldFrom() = newFromField;
+        insertedFieldItem->GetFieldTo() = newToField;
         insertedFieldItem->SetFieldsLabel();
+        
+        MainController::GetTables().trackerConnFieldMaps.push_back(TrackerConnFieldMap( { std::to_string( trackerConnID ), std::to_string( matchedFieldMappingID ) } ) );
 
-        if ( trackerConnID == -1 )
-        {
-            if ( m_pFieldItem == NULL )
-                trackerConnID = static_cast<ConnectionItem*>( m_pModel->GetItem( m_index, 0 ) )->GetTrackerConn().id;
-            else
-                trackerConnID = static_cast<ConnectionItem*>( m_pModel->GetItem( m_index.parent(), 0 ) )
-                                    ->GetTrackerConn()
-                                    .id;
-        }
-        MainController::GetTables().trackerConnFieldMaps.push_back(
-            TrackerConnFieldMap( { std::to_string( trackerConnID ), std::to_string( matchedFieldMappingID ) } ) );
-
-        auto IDisEqual = [ & ]( FieldMap& fieldMapping )
+        /*auto IDisEqual = [ & ]( FieldMap& fieldMapping )
         {
             return fieldMapping.id == m_pFieldItem->GetFieldMap()->id;
         };
-        auto pMatchedMapping = std::find_if( MainController::GetTables().fieldMaps.begin(),
-                                             MainController::GetTables().fieldMaps.end(),
-                                             IDisEqual );
-        *pMatchedMapping = *m_pFieldItem->GetFieldMap();
+        auto pMatchedMapping = std::find_if( MainController::GetTables().fieldMaps.begin(), MainController::GetTables().fieldMaps.end(), IDisEqual );
+        *pMatchedMapping = *m_pFieldItem->GetFieldMap();*/
     }
-    else
-        emit RequestMappingExists( idOfExistingItem );
+    emit RequestMappingExists( idOfExistingItem );
 }
 
 void FieldsController::DeleteMapping( const int& trackerConnID, const int& fieldMappingID )
@@ -296,8 +298,9 @@ const unsigned int FieldsController::CreateUniqueID()
 {
     if ( m_pModel->hasChildren( QModelIndex() ) )
     {
-        FieldItem* lastSiblingItem = static_cast<FieldItem*>(
-            m_pModel->GetItem( m_index.siblingAtRow( m_pModel->rowCount( m_index.parent() ) - 1 ), 0 ) );
+        QModelIndex indexOfLastSibling = m_index.siblingAtRow( m_pModel->rowCount( m_index.parent() ) - 1 );
+        FieldItem* lastSiblingItem = static_cast<FieldItem*>( m_pModel->GetItem( indexOfLastSibling, 0 ) );
+        qDebug() << "FieldMapID : " << QString::number(lastSiblingItem->GetFieldMap()->id);
         unsigned int id = lastSiblingItem->GetFieldMap()->id + 1;
         while ( true )
         {
@@ -310,7 +313,7 @@ const unsigned int FieldsController::CreateUniqueID()
                     break;
                 }
                 else if ( siblingItem == lastSiblingItem )
-                    return id;
+                    return 13;
             }
         }
     }

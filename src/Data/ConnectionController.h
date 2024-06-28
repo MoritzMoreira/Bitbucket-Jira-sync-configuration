@@ -12,7 +12,8 @@ class ConnectionController : public QWidget
 public:
     ConnectionController( const QModelIndex& index = QModelIndex(), QWidget* parent = 0 );
 
-    void SetIndexFromID( const unsigned int& connectionID );
+    void SetConnectionItem();
+    QModelIndex SetIndexFromID( const unsigned int& connectionID );
     void SaveChanges( const TrackerConn& trackerConn, const int& connectionID );
     void SaveAsNewConnection( TrackerConn& newTrackerConn, const int& connectionID );
     void DeleteConnection( const int& connectionID );

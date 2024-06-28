@@ -14,7 +14,7 @@ public:
 
     const QModelIndex SetIndexFromID( const unsigned int& trackerConnID, const unsigned int& fieldMappingID );
     void SetSaveOption( const bool& value );
-    void SetFieldItem( const unsigned int& trackerConnID, const unsigned int& fieldMappingID );
+    void SetFieldItem( const int& trackerConnID, const int& fieldMappingID );
     const std::vector<int> SaveChanges( Field& newFromField, Field& newToField, const int& trackerConnID = 0, const int& fieldMappingID = 0 );
     void SaveChangesToAll();
     void SaveOnlyToCurrentConn();

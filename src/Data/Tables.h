@@ -6,7 +6,7 @@
 
 struct Field
 {
-    Field( const std::vector<std::string>& field );
+    Field( const std::vector<std::string>& field = { "0", "", "" } );
 
     unsigned int id;
     std::string system;
@@ -15,11 +15,10 @@ struct Field
 
 struct FieldMap
 {
-    FieldMap( const std::vector<std::string>& fieldMap );
-
+    FieldMap( const std::vector<std::string>& fieldMap = { "0", "0", "0" } );
     unsigned int id;
     unsigned int fieldIDfrom;
-    unsigned fieldIDto;
+    unsigned int fieldIDto;
 };
 
 struct FOpt
@@ -55,7 +54,7 @@ struct FOptAdditional
 
 struct TrackerConn
 {
-    TrackerConn( const std::vector<std::string>& trackerConn );
+    TrackerConn( const std::vector<std::string>& trackerConn = { "0", "", "", "", "0", "0", "0", "0", "0", "0", "0" } );
     unsigned int id;
     std::string jiProj;
     std::string jiEpic;

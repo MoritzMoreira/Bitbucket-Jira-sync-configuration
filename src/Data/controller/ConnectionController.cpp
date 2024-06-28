@@ -1,4 +1,5 @@
 #include <qmessagebox.h>
+#include <qdebug.h>
 
 #include "../ConnectionController.h"
 #include "../MainController.h"
@@ -9,28 +10,26 @@ ConnectionController::ConnectionController( const QModelIndex& index, QWidget* p
     m_index( index )
 {}
 
-void ConnectionController::SetIndexFromID( const unsigned int& connectionID )
+QModelIndex ConnectionController::SetIndexFromID( const unsigned int& connectionID )
 {
     if ( m_index == QModelIndex() )
     {
         if ( m_pModel->hasChildren() )
         {
             int numberOfChildren = m_pModel->GetRootItem()->childCount();
-            for ( int i = 0; i < numberOfChildren;
-                  i++ )          // alternative : unique identifiers, data(), match(), custom item data role
+            for ( int i = 0; i < numberOfChildren; i++ ) // alternative : unique identifiers, data(), match(), custom item data role
             {
-                // TreeItem* treeItem = m_pModel->GetItem(QModelIndex(), 0)->child(i);
                 TreeItem* treeItem = m_pModel->GetRootItem()->child( i );
                 ConnectionItem* pConnectionItem = static_cast<ConnectionItem*>( treeItem );
                 if ( pConnectionItem->GetTrackerConn().id == connectionID )
+                {
                     m_index = MainController::GetModel()->index( i, 0, QModelIndex() );
+                    return m_index;
+                }
             }
         }
-        else
-            return;
     }
-    TreeItem* treeItem = m_pModel->GetItem( m_index, 0 );
-    m_pConnectionItem = static_cast<ConnectionItem*>( treeItem );
+    return m_index;
 }
 
 void ConnectionController::SaveChanges( const TrackerConn& trackerConn, const int& connectionID ) 
@@ -41,7 +40,6 @@ void ConnectionController::SaveChanges( const TrackerConn& trackerConn, const in
     {
         m_pConnectionItem->GetTrackerConn() = trackerConn;
         m_pConnectionItem->SetConnectionLabel();
-        std::cout << "\n save changes in controller: " << m_pConnectionItem->GetTrackerConn().jiProj << "\n";
         emit RequestUpdateView();
 
         auto IDisEqual = [ & ]( TrackerConn& connection )
@@ -59,23 +57,24 @@ void ConnectionController::SaveChanges( const TrackerConn& trackerConn, const in
 
 void ConnectionController::SaveAsNewConnection( TrackerConn& newTrackerConn, const int& connectionID )
 {
-    SetIndexFromID(
-        connectionID ); // ToDo : Block/get correct index when no connection is selected, although at least one exists
+    SetIndexFromID( connectionID ); // ToDo : Block/get correct index when no connection is selected, although at least one exists
+    TreeItem* treeItem = m_pModel->GetItem( m_index, 0 );
+    m_pConnectionItem = static_cast<ConnectionItem*>( treeItem );
+
     int idOfExistingItem = CheckIfConnectionExists( newTrackerConn );
     if ( idOfExistingItem == -1 || !m_pModel->hasChildren() )
     {
         const int numberOfRows = m_pModel->rowCount( m_index.parent() );
         newTrackerConn.id = CreateUniqueID();
         m_pModel->insertRows( numberOfRows, 1, m_index.parent() );
+
         TreeItem* insertedTreeItem;
         if ( m_index == QModelIndex() || !m_pModel->hasChildren() )
             insertedTreeItem = m_pModel->GetRootItem()->child( 0 );
         else
             insertedTreeItem = m_pModel->GetRootItem()->child( m_pModel->GetRootItem()->childCount() - 1 );
-        // insertedTreeItem = m_pModel->GetItem(m_index.siblingAtRow(m_pModel->rowCount(m_index.parent())), 0);
         ConnectionItem* insertedConnectionItem = static_cast<ConnectionItem*>( insertedTreeItem );
         insertedConnectionItem->GetTrackerConn() = newTrackerConn;
-        std::cout << "\n in savenew conn" << insertedConnectionItem->GetTrackerConn().jiProj << "\n";
         insertedConnectionItem->SetConnectionLabel();
 
         MainController::GetTables().trackerConns.push_back( newTrackerConn );
@@ -87,8 +86,6 @@ void ConnectionController::SaveAsNewConnection( TrackerConn& newTrackerConn, con
 void ConnectionController::DeleteConnection( const int& connectionID ) 
 {
     SetIndexFromID( connectionID );
-    std::cout << "\n row: " << m_index.row() << "\n";
-    std::cout << "\n childCount: " << m_pModel->GetRootItem()->childCount() << "\n";
     m_pModel->removeRows( m_index.row(), 1, m_index.parent() );
     emit RequestUpdateView();
 

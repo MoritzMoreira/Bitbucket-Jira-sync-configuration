@@ -110,13 +110,23 @@ int TreeModel::columnCount( const QModelIndex& parent ) const
     return m_pRootItem->columnCount();
 }
 
+
 bool TreeModel::insertRows( int position, int rows, const QModelIndex& parent )
 {
     rows = 1;
-    parent.row();
-    TrackerConn emptyTrackerConn = TrackerConn( { "0", "", "", "", "0", "0", "0", "0", "0", "0", "0" } );
+    TreeItem* parentItem = GetItem( parent, 0 );
     beginInsertRows( parent, position, position );
-    GetRootItem()->appendChild( new ConnectionItem( emptyTrackerConn, GetRootItem() ) );
+    if ( parentItem == nullptr )
+    {
+        ConnectionItem* emptyConnectionItem = new ConnectionItem( TrackerConn(), GetRootItem() );
+        GetRootItem()->appendChild( emptyConnectionItem );
+    }
+    else if ( GetItem( parent, 0 )->GetItemType() == EitemType::connection )
+    {        
+        ConnectionItem* connectionItem = static_cast<ConnectionItem*>( parentItem );
+        FieldItem* emptyFieldItem = new FieldItem( connectionItem, FieldMap(), Field(), Field() );
+        parentItem->appendChild( emptyFieldItem );
+    }
     endInsertRows();
 
     return true;

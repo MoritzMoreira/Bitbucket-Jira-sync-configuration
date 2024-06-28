@@ -39,7 +39,7 @@ class FieldItem : public TreeItem
 public:
     FieldItem( ConnectionItem* pConnectionItem, FieldMap& fieldMap, Field& pFieldFrom, Field& pFieldTo );
 
-    FieldMap* GetFieldMap() const;
+    FieldMap* GetFieldMap();
     Field& GetFieldFrom();
     Field& GetFieldTo();
     virtual const EitemType GetItemType() const override;
@@ -48,7 +48,7 @@ public:
 private:
     Field m_fieldFrom;
     Field m_fieldTo;
-    FieldMap& m_fieldMap;
+    FieldMap m_fieldMap;
 };
 
 // -------------------------------------------------------------------------------------------------------------------------------------------------

@@ -14,7 +14,7 @@ const EitemType FieldItem::GetItemType() const
     return EitemType::field;
 }
 
-FieldMap* FieldItem::GetFieldMap() const
+FieldMap* FieldItem::GetFieldMap()
 {
     return &m_fieldMap;
 }

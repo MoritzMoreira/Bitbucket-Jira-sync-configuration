@@ -15,6 +15,7 @@ FieldsWidget::FieldsWidget( FieldItem* pFieldItem, FieldsController* pFieldsCont
     ui->setupUi( this );
     SetData();
     connect( ui->pushButtonSaveChanges, &QPushButton::clicked, this, &FieldsWidget::SaveChanges );
+    connect( ui->pushButtonSaveAsNewMapping, &QPushButton::clicked, this, &FieldsWidget::SaveAsNewMapping );
     connect( ui->pushButtonReset, &QPushButton::clicked, this, &FieldsWidget::SetData );
     connect( ui->comboBoxFromSys, &QComboBox::currentTextChanged, this, &FieldsWidget::SwapSystem );
 }
@@ -97,7 +98,12 @@ void FieldsWidget::SaveChanges()
     SaveNewFields();    // Fields needs to be saved first to create the IDs as Data of ComboBoxItem
     Field fromField = Field( { "0", ui->comboBoxFromSys->currentText().toStdString(), ui->comboBoxFromPath->currentText().toStdString() } );
     Field toField = Field( { "0", ui->labelToSysVar->text().toStdString(), ui->comboBoxToPath->currentText().toStdString() } );
-    std::vector<int> resultOfSaveChanges = m_pFieldsController->SaveChanges( fromField, toField, m_pFieldItem->GetFieldMap()->id );
+    
+    std::vector<int> resultOfSaveChanges = m_pFieldsController->SaveChanges( 
+        fromField,
+        toField, 
+        static_cast<ConnectionItem*>( m_pFieldItem->parentItem() )->GetTrackerConn().id,
+        m_pFieldItem->GetFieldMap()->id );
     if ( resultOfSaveChanges.size() == 1 )
     {
         if ( resultOfSaveChanges.front() >= 0 )
@@ -155,7 +161,11 @@ void FieldsWidget::SaveAsNewMapping() const
     SaveNewFields();
     Field fromField = Field( { "0", ui->comboBoxFromSys->currentText().toStdString(), ui->comboBoxFromPath->currentText().toStdString() } );
     Field toField = Field( { "0", ui->labelToSysVar->text().toStdString(), ui->comboBoxToPath->currentText().toStdString() } );
-    m_pFieldsController->SaveAsNewMapping( fromField, toField, m_pFieldItem->GetFieldMap()->id );
+    m_pFieldsController->SaveAsNewMapping(
+        fromField,
+        toField,
+        static_cast<ConnectionItem*>( m_pFieldItem->parentItem() )->GetTrackerConn().id,
+        m_pFieldItem->GetFieldMap()->id );
 }
 
 // -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------

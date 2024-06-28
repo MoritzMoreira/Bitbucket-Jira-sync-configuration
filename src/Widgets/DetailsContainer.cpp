@@ -27,12 +27,8 @@ DetailsContainer::DetailsContainer( const QModelIndex& index, QWidget* parent ) 
     else if ( m_pTreeItem->GetItemType() == EitemType::connection )
     {
         ConnectionController* pConnectionController = new ConnectionController( index );
-
         ConnectionItem* pConnectionItem = static_cast<ConnectionItem*>( m_pTreeItem );
-        ConnectionWidget* connectionWidget = new ConnectionWidget( pConnectionItem,
-                                                                   index,
-                                                                   pConnectionController,
-                                                                   this );
+        ConnectionWidget* connectionWidget = new ConnectionWidget( pConnectionItem, index, pConnectionController, this );
         connect( pConnectionController, &ConnectionController::RequestUpdateView, this, &DetailsContainer::RequestUpdateView );
         ui->detailWidgetsLayout->addWidget( connectionWidget );
     }
@@ -43,7 +39,7 @@ DetailsContainer::DetailsContainer( const QModelIndex& index, QWidget* parent ) 
         FieldsWidget* fieldsWidget = new FieldsWidget( pFieldItem, m_pFieldsController, this );
 
         connect( m_pFieldsController, &FieldsController::RequestUpdateView, this, &DetailsContainer::RequestUpdateView );
-        connect( m_pFieldsController, &FieldsController::RequestSaveOption, this, &DetailsContainer::RequestSaveOption );
+        // connect( m_pFieldsController, &FieldsController::RequestSaveOption, this, &DetailsContainer::RequestSaveOption );
         ui->detailWidgetsLayout->addWidget( fieldsWidget );
     }
     else if ( m_pTreeItem->GetItemType() == EitemType::option )
