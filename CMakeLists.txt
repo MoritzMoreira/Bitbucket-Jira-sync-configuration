@@ -2,18 +2,14 @@ cmake_minimum_required(VERSION 3.0)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 #set(CMAKE_PREFIX_PATH <path_to_qt>/Qt/<qt_version>/<compiler>/lib/cmake)
-set(CMAKE_PREFIX_PATH "C:/5.15.11_x64/lib/cmake")
-project(syncConfig_UI)
 
+project(syncConfig_UI)
+set(CMAKE_PREFIX_PATH "$ENV{QTDIR}")
 # Set up Qt
 find_package(Qt5 COMPONENTS Core Gui Widgets QUIET)
-find_package(Qt6 COMPONENTS Core Gui Widgets QUIET)
 if(Qt5_FOUND)
 	message(STATUS "Qt5 found")
 	set(EZ_FOUND_QT_VERSION Qt5)
-elseif(Qt6_FOUND)
-	message(STATUS "Qt6 found")
-	set(EZ_FOUND_QT_VERSION Qt6)
 else()
 	message(FATAL_ERROR "Qt5 or Qt6 not found! If you have Qt5 or Qt6 installed, please set CMAKE_PREFIX_PATH to hold Qt cmake directory. Example:\n'set(CMAKE_PREFIX_PATH <path_to_qt>/Qt/<qt_version>/<compiler>/lib/cmake)'")
 endif()
@@ -153,3 +149,16 @@ endif()
 if("${CMAKE_GENERATOR}" MATCHES "Visual Studio")
 	set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${EZ_EXECUTABLE_NAME})
 endif()
+
+# Set Clang file paths to Argon repository directory
+set(CMAKE_CXX_CLANG_TIDY
+  clang-tidy-11;
+  -format-style=${QTDIR}/../../../Argon/.clang-tidy;
+  -header-filter=${CMAKE_CURRENT_SOURCE_DIR};
+)
+
+set(CMAKE_CXX_CLANG_FORMAT
+  clang-format-11;
+  -format-style=${QTDIR}/../../../Argon/.clang-format;
+  -header-filter=${CMAKE_CURRENT_SOURCE_DIR};
+)

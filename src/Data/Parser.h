@@ -12,7 +12,7 @@ public:
 
     const Tables ParseTables() const;
     void DeleteSpaces( std::string& string ) const;
-    const std::vector<std::string> SplitDbLinesOrEntries( std::string& s, std::string& searched ) const;
+    const std::vector<std::string> SplitDbLinesOrEntries( std::string s, const std::string& searched ) const;
     const std::string& RemoveOneLineComments( std::string& string ) const;
     const Tables& GenerateTableObjects( const std::vector<std::string>& tableEntry, const std::string&, Tables& tables ) const;
 

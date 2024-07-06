@@ -100,7 +100,7 @@ void Parser::DeleteSpaces( std::string& string ) const
     }
 }
 
-const std::vector<std::string> Parser::SplitDbLinesOrEntries( std::string& input, std::string& delimiter ) const
+const std::vector<std::string> Parser::SplitDbLinesOrEntries( std::string input, const std::string& delimiter ) const
 {
     DeleteSpaces( input );
     std::vector<std::string> result;

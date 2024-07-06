@@ -12,24 +12,22 @@ MainController::~MainController()
 
 const MainController* MainController::GetMainController() 
 {
-    if ( m_pMainController == NULL )
-    {
-        m_pMainController = new MainController();
-
-        QString path = QDir::currentPath() + "/InputData.txt";
-        if ( QFileInfo::exists( path ) && QFileInfo( path ).isFile() )
-        {
-            Parser parser( path.toStdString() ); // p.Print();
-            m_tables = parser.ParseTables();
-            m_pModel = new TreeModel( &m_tables );
-        }
-        else
-            std::cout << "\n file does not exist \n";
-
+    if ( m_pMainController != NULL )
         return m_pMainController;
+    m_pMainController = new MainController();
+
+    QString path = QDir::currentPath() + "/tablesFromDb.txt";
+    if ( QFileInfo::exists( path ) && QFileInfo( path ).isFile() )
+    {
+        Parser parser( path.toStdString() ); // p.Print();
+        m_tables = parser.ParseTables();
+        m_pModel = new TreeModel( &m_tables );
     }
     else
-        return m_pMainController;
+        std::cerr << "\n file does not exist \n";
+
+    return m_pMainController;
+  
 }
 
 Tables& MainController::GetTables()
